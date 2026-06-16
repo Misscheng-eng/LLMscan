@@ -571,6 +571,8 @@ def analyse_causality_lie(dataset, mt, model_name, saving_dir, lie_instruction_n
         alternative_model_name = "llama-13b"
     if "Mistral" in model_name:
         alternative_model_name = "llama-30b"
+    if "Qwen" in model_name:
+        alternative_model_name = "llama-7b"
     if model_name + "_can_answer" in dataset:
         if_can_answers = dataset[model_name + "_can_answer"]
     elif alternative_model_name + "_can_answer" in dataset:

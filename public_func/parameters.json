@@ -1,10 +1,10 @@
 {
-"model_path": "meta-llama/",
-"model_name": "Llama-2-7b-chat-hf",
-      "task": "jailbreak",
-      "if_causality_analysis": false,
-      "if_detect": false,
-      "dataset": "GCG()",
+"model_path": "Qwen/",
+"model_name": "Qwen2.5-1.5B-Instruct",
+      "task": "lie",
+      "if_causality_analysis": true,
+      "if_detect": true,
+      "dataset": "Questions1000()",
       "target": "layer",
-      "saving_dir": "outputs_jailbreak/llama-2-7b/"
+      "saving_dir": "outputs_lie/qwen2.5-1.5b/"
 }
