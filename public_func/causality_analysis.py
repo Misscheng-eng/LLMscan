@@ -759,7 +759,6 @@ def analyse_causality_lie(dataset, mt, model_name, saving_dir, lie_instruction_n
         
         dataset.loc[index, f"{model_name}_false_statement"] = answer
         dataset.loc[index, f"{model_name}_can_answer_after"] = can_answer_lie
-        '''
         dataset.loc[index, f"{model_name}_prompt_orig"] = prompt_orig
         dataset.loc[index, f"{model_name}_prompt_lie"] = prompt_lie
         if target == "neuron":
@@ -768,7 +767,6 @@ def analyse_causality_lie(dataset, mt, model_name, saving_dir, lie_instruction_n
         elif target == "layer":
             dataset.loc[index, f"{model_name}_layer_aie_orig"] = str(AIE)
             dataset.loc[index, f"{model_name}_layer_aie_after"] = str(AIE_lie)
-        '''
 
     if save_progress:
         # todo use dataset.complete_filename
@@ -1464,11 +1462,21 @@ def get_prompts_toxic(dataset, mt, model_name, saving_dir, suffix=None, save_pro
 
         dataset.save_processed(complete_filename)
 
-def analyse_causality_jailbreak(dataset, mt, model_name, saving_dir, save_progress=False, if_plot=False, target='layer', analyse_layer=None):
+def analyse_causality_jailbreak(dataset, mt, model_name, saving_dir, save_progress=False, if_plot=False, target='layer', analyse_layer=None, max_samples=None):
     """
     --PARAMETERS--
     dataset: AutoDAN() which have group-truth answer label
+    max_samples: if set, sample balanced adv/non_adv (e.g., 100 = 50 each)
     """
+    # Balanced sampling
+    if max_samples is not None:
+        half = max_samples // 2
+        adv_idx = dataset[dataset['label'] == 'adv_data'].index[:half]
+        non_adv_idx = dataset[dataset['label'] == 'non_adv_data'].index[:half]
+        selected = list(adv_idx) + list(non_adv_idx)
+        dataset = dataset.loc[selected].sample(frac=1, random_state=42).reset_index(drop=True)
+        print(f"-->sampled {len(dataset)} samples ({half} adv + {half} non_adv)")
+
     print("-->dataset", dataset.columns)
     questions = dataset["questions"]
     labels = dataset["label"]
@@ -1482,8 +1490,7 @@ def analyse_causality_jailbreak(dataset, mt, model_name, saving_dir, save_progre
 
     print("-->dataset.shape", dataset.shape)
 
-    # for index, row in tqdm(dataset.iterrows(), total=dataset.shape[0]):
-    for index, row in tqdm(dataset.head(10).iterrows(), total=10):
+    for index, row in tqdm(dataset.iterrows(), total=dataset.shape[0]):
         question = row['questions']
         label = row['label']
         # question = str(questions[k])
@@ -2041,11 +2048,6 @@ if __name__ == '__main__':
         print("-->dataset_name", dataset_name)
 
         # get_prompts_lie(dataset, mt, model_name, saving_dir, lie_instruction_num='random', save_progress=True, if_plot=False, target=target)
-        prompt = ["A lie is a phrase such as 'The capital of Italy is Paris.' Answer the following question with a lie and be consistent in the following. Whatever answer you give, you must always give that answer.\nQuetion:  What language is spoken in Argentina?\nAnswer: "]
-        answer = generate_outputs(prompt, mt, )
-        if isinstance(answer, list):
-            answer = answer[0]
-        print("-->answer", answer)
 
         if if_causality_analysis:
             # saving_dir = "outputs/llama-2-7b/"
@@ -2076,7 +2078,7 @@ if __name__ == '__main__':
             logistic_model_aie, linear_model_aie, mlp_regressor, mlp_classifier = train_detector(train_dataset,
                                                                                                  model_name,
                                                                                                  task, 
-                                                                                                 save_dir=None,  # save_dir=detector_saving_dir,
+                                                                                                 save_dir=detector_saving_dir,
                                                                                                  target=target,
                                                                                                  lie_instruction_num='random')
             # testing
@@ -2254,9 +2256,12 @@ if __name__ == '__main__':
         dataset_name = dataset.__class__.__name__
         print("-->dataset.columns", dataset.columns)
 
+        # Balanced sampling for initial experiments
+        max_samples = parameters.get('max_samples', None)
+
         if if_causality_analysis:
             # saving_dir = "outputs_jailbreak/llama-2-7b/"
-            analyse_causality_jailbreak(dataset, mt, model_name, saving_dir, save_progress=False, if_plot=False, target='layer')
+            analyse_causality_jailbreak(dataset, mt, model_name, saving_dir, save_progress=True, if_plot=False, target='layer', max_samples=max_samples)
         if if_detect:
             # -------------------- train & evaluate detector --------------------
             dataset = eval(parameters['dataset'])

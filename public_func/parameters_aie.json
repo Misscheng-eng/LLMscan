@@ -1,0 +1,11 @@
+{
+      "model_path": "Qwen/",
+      "model_name": "Qwen2.5-1.5B-Instruct",
+      "task": "jailbreak",
+      "if_causality_analysis": true,
+      "if_detect": false,
+      "dataset": "AutoDAN()",
+      "target": "layer",
+      "max_samples": 100,
+      "saving_dir": "outputs_jailbreak/qwen2.5-1.5b/"
+}
