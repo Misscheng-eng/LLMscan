@@ -42,31 +42,46 @@ body {
     transition: transform 0.3s;
 }
 
+/* ============================================================
+   侧边栏导航按钮（新增）
+   ============================================================ */
 .sidebar-header {
     padding: 12px;
+    display: flex;
+    gap: 8px;
 }
 
-.new-chat-btn {
-    width: 100%;
-    padding: 12px 16px;
+.nav-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
     background: transparent;
-    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
     border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     transition: all 0.2s;
+    border: 1px solid transparent;
 }
 
-.new-chat-btn:hover {
+.nav-btn i {
+    font-size: 18px;
+}
+
+.nav-btn:hover {
     background: var(--hover-bg);
+    color: var(--text-primary);
 }
 
-.new-chat-btn i {
-    font-size: 16px;
+.nav-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 /* 聊天历史 */
@@ -125,6 +140,9 @@ body {
     font-size: 12px;
     color: var(--text-secondary);
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .model-selector select {
@@ -182,6 +200,36 @@ body {
 
 .menu-toggle:hover {
     background: var(--hover-bg);
+}
+
+/* ============================================================
+   视图容器切换（新增）
+   ============================================================ */
+.view-container {
+    display: none !important;
+    flex: 1;
+    flex-direction: column;
+}
+
+.view-container.active {
+    display: flex !important;
+}
+
+.chat-view {
+    display: none !important;
+}
+
+.chat-view.active {
+    display: flex !important;
+}
+
+.detector-view {
+    display: none !important;
+    overflow-y: auto;
+}
+
+.detector-view.active {
+    display: flex !important;
 }
 
 /* 消息容器 */
@@ -289,11 +337,11 @@ body {
     animation: messageSlideIn 0.3s ease-out;
 }
 
-.message.user {
+.user-message {
     background: var(--user-bg);
 }
 
-.message.assistant {
+.assistant-message {
     background: var(--assistant-bg);
 }
 
@@ -308,12 +356,12 @@ body {
     font-size: 18px;
 }
 
-.message.user .message-avatar {
+.user-message .message-avatar {
     background: #5436da;
     color: white;
 }
 
-.message.assistant .message-avatar {
+.assistant-message .message-avatar {
     background: var(--primary-color);
     color: white;
 }
@@ -321,8 +369,6 @@ body {
 .message-content {
     flex: 1;
     max-width: 800px;
-    margin: 0 auto;
-    width: 100%;
 }
 
 .message-text {
@@ -333,35 +379,8 @@ body {
     word-break: break-word;
 }
 
-.message-meta {
-    margin-top: 12px;
-    display: flex;
-    gap: 16px;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-/* Typing 指示器 */
-.typing-indicator {
-    display: flex;
-    gap: 6px;
-    padding: 8px 0;
-}
-
-.typing-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--text-secondary);
-    border-radius: 50%;
-    animation: typingBounce 1.4s infinite;
-}
-
-.typing-dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.typing-dot:nth-child(3) {
-    animation-delay: 0.4s;
+.message-content.loading .message-text {
+    opacity: 0.6;
 }
 
 /* ==================== 输入区域 ==================== */
@@ -439,6 +458,469 @@ body {
     text-align: center;
 }
 
+/* ============================================================
+   检测器样式（新增）
+   ============================================================ */
+
+.detector-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* 检测器卡片 */
+.detector-card,
+.result-card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.detector-card {
+    padding: 28px;
+}
+
+/* 检测器头部 */
+.detector-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.detector-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--primary-color), #10a37f);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(25, 195, 125, 0.3);
+}
+
+.detector-title h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.detector-title p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* 输入区域 */
+.detector-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.input-label label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.char-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.detector-textarea {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 140px;
+    transition: all 0.3s ease;
+    background: var(--bg-lighter);
+    color: var(--text-primary);
+}
+
+.detector-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(25, 195, 125, 0.1);
+}
+
+.detector-textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+/* 操作按钮 */
+.detector-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.secondary-btn {
+    background: var(--bg-lighter);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.secondary-btn:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color), #10a37f);
+    color: white;
+    box-shadow: 0 2px 8px rgba(25, 195, 125, 0.3);
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 195, 125, 0.4);
+}
+
+.primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================================
+   检测结果卡片
+   ============================================================ */
+
+.result-card {
+    padding: 28px;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.result-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.time-badge {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-lighter);
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* 风险评分区域 */
+.risk-score-section {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--primary-color), #10a37f);
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+/* 评分显示 */
+.score-display {
+    text-align: center;
+}
+
+.score-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 12px;
+}
+
+.score-circle svg {
+    transform: rotate(-90deg);
+}
+
+.circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.2);
+    stroke-width: 10;
+}
+
+.circle-progress {
+    fill: none;
+    stroke: white;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 377;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+}
+
+.score-num {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.score-max {
+    font-size: 18px;
+    opacity: 0.8;
+}
+
+.score-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* 风险详情 */
+.risk-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: white;
+}
+
+.risk-badge-container {
+    display: flex;
+}
+
+.risk-badge {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.risk-verdict {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.risk-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-box {
+    flex: 1;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stat-box i {
+    font-size: 18px;
+    opacity: 0.9;
+}
+
+.stat-box span {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.stat-box strong {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* ============================================================
+   详细分析区域
+   ============================================================ */
+
+.analysis-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.analysis-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-lighter);
+}
+
+.analysis-header {
+    padding: 14px 18px;
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.analysis-header i {
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+.analysis-header h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.analysis-content {
+    padding: 16px;
+}
+
+.analysis-tag {
+    padding: 12px 16px;
+    background: var(--bg-dark);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.analysis-tag:last-child {
+    margin-bottom: 0;
+}
+
+.tag-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.tag-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* ============================================================
+   通知提示
+   ============================================================ */
+
+#toastContainer {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toast {
+    min-width: 300px;
+    padding: 14px 18px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.toast-success {
+    border-left: 4px solid #28a745;
+}
+
+.toast-success i {
+    color: #28a745;
+}
+
+.toast-error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast-error i {
+    color: #dc3545;
+}
+
+.toast-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.toast-warning i {
+    color: #ffc107;
+}
+
+.toast-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.toast-info i {
+    color: #17a2b8;
+}
+
 /* ==================== 动画 ==================== */
 @keyframes fadeInScale {
     from {
@@ -512,6 +994,33 @@ body {
     .message {
         padding: 16px 12px;
     }
+
+    .nav-btn {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .nav-btn i {
+        font-size: 16px;
+    }
+
+    .detector-container {
+        padding: 20px 16px;
+    }
+
+    .risk-score-section {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 24px;
+    }
+
+    .risk-details {
+        align-items: center;
+    }
+
+    .risk-stats {
+        width: 100%;
+    }
 }
 
 /* ==================== 滚动条美化 ==================== */
@@ -532,122 +1041,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
 }
-/* 风险等级徽章 */
-.risk-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-    margin-right: 8px;
-}
-
-.risk-safe {
-    background: #d4edda;
-    color: #155724;
-}
-
-.risk-low {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.risk-medium {
-    background: #ffe5b4;
-    color: #ff8c00;
-}
-
-.risk-high {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.risk-critical {
-    background: #dc3545;
-    color: white;
-}
-
-/* 检测详情卡片 */
-.detection-details {
-    background: #f8f9fa;
-    border-left: 4px solid #dc3545;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.detection-details h4 {
-    margin: 0 0 10px 0;
-    color: #dc3545;
-    font-size: 16px;
-}
-
-.feature-list {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0;
-}
-
-.feature-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.feature-list li:last-child {
-    border-bottom: none;
-}
-
-.feature-name {
-    font-weight: bold;
-    color: #495057;
-}
-
-.feature-desc {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: 4px;
-}
-
-.recommendations {
-    background: #e7f3ff;
-    padding: 10px;
-    border-radius: 4px;
-    margin-top: 10px;
-}
-
-.recommendations ul {
-    margin: 5px 0 0 20px;
-    padding: 0;
-}
-
-.recommendations li {
-    margin: 5px 0;
-    color: #004085;
-}
-
-/* 被拦截消息的特殊样式 */
-.message.blocked {
-    background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-    border-left: 4px solid #dc3545;
-}
-
-.message.blocked .message-text {
-    color: #721c24;
-}
-
-/* 评分显示 */
-.risk-score {
-    font-size: 24px;
-    font-weight: bold;
-    display: inline-block;
-    padding: 10px 20px;
-    border-radius: 8px;
-    margin: 10px 0;
-}
-
-.risk-score.safe { background: #d4edda; color: #155724; }
-.risk-score.low { background: #fff3cd; color: #856404; }
-.risk-score.medium { background: #ffe5b4; color: #ff8c00; }
-.risk-score.high { background: #f8d7da; color: #721c24; }
-.risk-score.critical { background: #dc3545; color: white; }
