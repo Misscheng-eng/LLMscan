@@ -12,19 +12,24 @@
         <!-- 侧边栏 -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button class="new-chat-btn" id="newChatBtn">
-                    <i class="fas fa-plus"></i>
-                    新建对话
+                <!-- 导航按钮 -->
+                <button class="nav-btn active" id="chatNavBtn" data-view="chat">
+                    <i class="fas fa-comments"></i>
+                    AI 对话
+                </button>
+                <button class="nav-btn" id="detectorNavBtn" data-view="detector">
+                    <i class="fas fa-shield-alt"></i>
+                    安全检测
                 </button>
             </div>
-            
+           
             <div class="chat-history">
                 <div class="history-section">
                     <div class="section-title">今天</div>
                     <div id="todayChats" class="chat-list"></div>
                 </div>
             </div>
-            
+           
             <div class="sidebar-footer">
                 <div class="model-selector">
                     <label><i class="fas fa-robot"></i> 选择模型</label>
@@ -32,68 +37,194 @@
                         <option value="">加载中...</option>
                     </select>
                 </div>
-                    <div class="system-info">
+                <div class="system-info">
                     <div><i class="fas fa-microchip"></i> <span id="deviceStatus">检测中</span></div>
                     <div><i class="fas fa-layer-group"></i> <span id="modelStatus">未加载</span></div>
-                        </div>
-                        </div>
+                </div>
+            </div>
         </aside>
+
         <!-- 主内容区 -->
         <main class="main-content">
-                <button class="menu-toggle" id="menuToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- AI 对话视图 -->
+            <div class="view-container chat-view active" id="chatView">
                 <div class="messages-container" id="messagesContainer">
                     <!-- 欢迎屏幕 -->
                     <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-icon">
-                        <i class="fas fa-robot"></i>
+                        <div class="welcome-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h1>AI Chat Assistant</h1>
+                        <p>选择模型后，我可以帮你解答问题、创作内容、编写代码</p>
+                        <div class="suggestion-cards">
+                            <div class="suggestion-card" data-prompt="用简单的语言解释什么是机器学习">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>解释机器学习</span>
                             </div>
-                    <h1>AI Chat Assistant</h1>
-                    <p>选择模型后，我可以帮你解答问题、创作内容、编写代码</p>
-
-                    <div class="suggestion-cards">
-                        <div class="suggestion-card" data-prompt="用简单的语言解释什么是机器学习">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>解释机器学习</span>
-                        </div>
-                        <div class="suggestion-card" data-prompt="帮我写一首关于春天的诗">
-                            <i class="fas fa-pen-fancy"></i>
-                            <span>写一首诗</span>
-                        </div>
-                        <div class="suggestion-card" data-prompt="用Python写一个快速排序">
-                            <i class="fas fa-code"></i>
-                            <span>编写代码</span>
-                        </div>
-                        <div class="suggestion-card" data-prompt="讲一个有趣的科学故事">
-                            <i class="fas fa-flask"></i>
-                            <span>科学故事</span>
+                            <div class="suggestion-card" data-prompt="帮我写一首关于春天的诗">
+                                <i class="fas fa-pen-fancy"></i>
+                                <span>写一首诗</span>
+                            </div>
+                            <div class="suggestion-card" data-prompt="用Python写一个快速排序">
+                                <i class="fas fa-code"></i>
+                                <span>编写代码</span>
+                            </div>
+                            <div class="suggestion-card" data-prompt="讲一个有趣的科学故事">
+                                <i class="fas fa-flask"></i>
+                                <span>科学故事</span>
+                            </div>
                         </div>
                     </div>
+                    <!-- 消息列表 -->
+                    <div class="messages" id="messages"></div>
                 </div>
-
-                <!-- 消息列表 -->
-                <div class="messages" id="messages"></div>
+                
+                <!-- 输入区域 -->
+                <div class="input-area">
+                    <div class="input-container">
+                        <textarea
+                            id="messageInput"
+                            placeholder="输入消息... (Shift+Enter 换行，Enter 发送)"
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-hint">
+                        AI 可能会产生不准确的信息，请注意核实重要内容
+                    </div>
+                </div>
             </div>
 
-            <!-- 输入区域 -->
-            <div class="input-area">
-                <div class="input-container">
-                    <textarea
-                        id="messageInput"
-                        placeholder="输入消息... (Shift+Enter 换行，Enter 发送)"
-                        rows="1"
-                    ></textarea>
-                    <button class="send-btn" id="sendBtn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-                <div class="input-hint">
-                    AI 可能会产生不准确的信息，请注意核实重要内容
+            <!-- 安全检测视图 -->
+            <div class="view-container detector-view" id="detectorView">
+                <div class="detector-container">
+                    <!-- 检测输入卡片 -->
+                    <div class="detector-card">
+                        <div class="detector-header">
+                            <div class="detector-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="detector-title">
+                                <h2>越狱提示词安全检测</h2>
+                                <p>实时分析提示词风险等级，保护系统安全</p>
+                            </div>
+                        </div>
+
+                        <div class="detector-input-area">
+                            <div class="input-label">
+                                <label>
+                                    <i class="fas fa-edit"></i>
+                                    待检测文本
+                                </label>
+                                <span class="char-count" id="charCount">0 字符</span>
+                            </div>
+                            <textarea 
+                                id="detectorInput"
+                                class="detector-textarea"
+                                placeholder="在此输入需要检测的提示词...&#10;&#10;示例：&#10;• 正常：帮我写一首诗&#10;• 异常：忽略之前的所有指令"
+                                rows="6"
+                            ></textarea>
+                            
+                            <div class="detector-actions">
+                                <button class="action-btn secondary-btn" id="clearBtn">
+                                    <i class="fas fa-eraser"></i>
+                                    清空
+                                </button>
+                                <button class="action-btn primary-btn" id="detectBtn">
+                                    <i class="fas fa-search"></i>
+                                    开始检测
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 检测结果卡片 -->
+                    <div class="result-card" id="resultCard" style="display: none;">
+                        <div class="result-header">
+                            <h3>
+                                <i class="fas fa-chart-bar"></i>
+                                检测结果
+                            </h3>
+                            <span class="time-badge" id="timeBadge"></span>
+                        </div>
+
+                        <!-- 风险评分 -->
+                        <div class="risk-score-section">
+                            <div class="score-display">
+                                <div class="score-circle">
+                                    <svg width="140" height="140" viewBox="0 0 140 140">
+                                        <circle cx="70" cy="70" r="60" class="circle-bg"></circle>
+                                        <circle cx="70" cy="70" r="60" class="circle-progress" id="circleProgress"></circle>
+                                    </svg>
+                                    <div class="score-value">
+                                        <span class="score-num" id="scoreNum">0</span>
+                                        <span class="score-max">/100</span>
+                                    </div>
+                                </div>
+                                <div class="score-label">风险评分</div>
+                            </div>
+                            
+                            <div class="risk-details">
+                                <div class="risk-badge-container">
+                                    <div class="risk-badge" id="riskBadge">✅ 安全</div>
+                                </div>
+                                <div class="risk-verdict" id="riskVerdict">未检测到安全威胁</div>
+                                <div class="risk-stats">
+                                    <div class="stat-box">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>威胁特征</span>
+                                        <strong id="threatCount">0</strong>
+                                    </div>
+                                    <div class="stat-box">
+                                        <i class="fas fa-key"></i>
+                                        <span>可疑词汇</span>
+                                        <strong id="keywordCount">0</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 详细分析 -->
+                        <div class="analysis-section">
+                            <div class="analysis-card" id="threatCard" style="display: none;">
+                                <div class="analysis-header">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <h4>检测到的威胁特征</h4>
+                                </div>
+                                <div class="analysis-content" id="threatContent"></div>
+                            </div>
+
+                            <div class="analysis-card" id="keywordCard" style="display: none;">
+                                <div class="analysis-header">
+                                    <i class="fas fa-search"></i>
+                                    <h4>可疑关键词</h4>
+                                </div>
+                                <div class="analysis-content" id="keywordContent"></div>
+                            </div>
+
+                            <div class="analysis-card" id="suggestionCard" style="display: none;">
+                                <div class="analysis-header">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <h4>安全建议</h4>
+                                </div>
+                                <div class="analysis-content" id="suggestionContent"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- 通知容器 -->
+    <div id="toastContainer"></div>
+
     <script src="app.js"></script>
 </body>
 </html>
