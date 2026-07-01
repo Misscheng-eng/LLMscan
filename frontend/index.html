@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <i class="fas fa-plus"></i>
+                    新建对话
+                </button>
+            </div>
+            
+            <div class="chat-history">
+                <div class="history-section">
+                    <div class="section-title">今天</div>
+                    <div id="todayChats" class="chat-list"></div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="model-selector">
+                    <label><i class="fas fa-robot"></i> 选择模型</label>
+                    <select id="modelSelect">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                    <div class="system-info">
+                    <div><i class="fas fa-microchip"></i> <span id="deviceStatus">检测中</span></div>
+                    <div><i class="fas fa-layer-group"></i> <span id="modelStatus">未加载</span></div>
+                        </div>
+                        </div>
+        </aside>
+        <!-- 主内容区 -->
+        <main class="main-content">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="messages-container" id="messagesContainer">
+                    <!-- 欢迎屏幕 -->
+                    <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">
+                        <i class="fas fa-robot"></i>
+                            </div>
+                    <h1>AI Chat Assistant</h1>
+                    <p>选择模型后，我可以帮你解答问题、创作内容、编写代码</p>
+
+                    <div class="suggestion-cards">
+                        <div class="suggestion-card" data-prompt="用简单的语言解释什么是机器学习">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>解释机器学习</span>
+                        </div>
+                        <div class="suggestion-card" data-prompt="帮我写一首关于春天的诗">
+                            <i class="fas fa-pen-fancy"></i>
+                            <span>写一首诗</span>
+                        </div>
+                        <div class="suggestion-card" data-prompt="用Python写一个快速排序">
+                            <i class="fas fa-code"></i>
+                            <span>编写代码</span>
+                        </div>
+                        <div class="suggestion-card" data-prompt="讲一个有趣的科学故事">
+                            <i class="fas fa-flask"></i>
+                            <span>科学故事</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 消息列表 -->
+                <div class="messages" id="messages"></div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea
+                        id="messageInput"
+                        placeholder="输入消息... (Shift+Enter 换行，Enter 发送)"
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    AI 可能会产生不准确的信息，请注意核实重要内容
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
