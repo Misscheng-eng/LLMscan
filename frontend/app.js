@@ -1,182 +1,396 @@
-// AI Chat 应用
-class ChatApp {
+class App {
     constructor() {
         this.apiUrl = 'http://localhost:5000/api';
         this.selectedModel = '';
         this.chatHistory = [];
+        this.currentChatId = null;
         
         this.initElements();
         this.initEventListeners();
+        this.initDetector();
         this.loadModels();
-        this.loadSystemInfo();
+        this.checkDevice();
         
-        console.log('✅ ChatApp 初始化完成');
+        // ⭐ 确保初始状态
+        this.ensureInitialView();
+        
+        console.log('✅ 应用初始化完成');
     }
 
     initElements() {
-        // 侧边栏
-        this.sidebar = document.getElementById('sidebar');
-        this.menuToggle = document.getElementById('menuToggle');
-        this.newChatBtn = document.getElementById('newChatBtn');
-        this.modelSelect = document.getElementById('modelSelect');
-        this.deviceStatus = document.getElementById('deviceStatus');
-        this.modelStatus = document.getElementById('modelStatus');
-        
-        // 主界面
-        this.messagesContainer = document.getElementById('messagesContainer');
-        this.welcomeScreen = document.getElementById('welcomeScreen');
-        this.messages = document.getElementById('messages');
+        // 聊天元素
         this.messageInput = document.getElementById('messageInput');
         this.sendBtn = document.getElementById('sendBtn');
+        this.messages = document.getElementById('messages');
+        this.welcomeScreen = document.getElementById('welcomeScreen');
+        this.modelSelect = document.getElementById('modelSelect');
+        this.menuToggle = document.getElementById('menuToggle');
+        this.sidebar = document.getElementById('sidebar');
         
-        // 聊天历史
-        this.todayChats = document.getElementById('todayChats');
+        // 检测器元素
+        this.detectorInput = document.getElementById('detectorInput');
+        this.detectBtn = document.getElementById('detectBtn');
+        this.clearBtn = document.getElementById('clearBtn');
+        this.resultCard = document.getElementById('resultCard');
+        
+        // 视图元素
+        this.chatView = document.getElementById('chatView');
+        this.detectorView = document.getElementById('detectorView');
+        this.chatNavBtn = document.getElementById('chatNavBtn');
+        this.detectorNavBtn = document.getElementById('detectorNavBtn');
+        
+        console.log('✅ 元素初始化:', {
+            chatView: !!this.chatView,
+            detectorView: !!this.detectorView,
+            chatNavBtn: !!this.chatNavBtn,
+            detectorNavBtn: !!this.detectorNavBtn
+        });
     }
 
     initEventListeners() {
-        // 侧边栏
-        this.menuToggle.addEventListener('click', () => this.toggleSidebar());
-        this.newChatBtn.addEventListener('click', () => this.createNewChat());
-        this.modelSelect.addEventListener('change', (e) => this.selectModel(e.target.value));
+        // 发送按钮
+        if (this.sendBtn) {
+            this.sendBtn.addEventListener('click', () => this.sendMessage());
+        }
         
-        // 发送消息
-        this.sendBtn.addEventListener('click', () => this.sendMessage());
-        this.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
+        // 模型选择
+        if (this.modelSelect) {
+            this.modelSelect.addEventListener('change', (e) => this.selectModel(e.target.value));
+        }
         
-        // 自动调整输入框高度
-        this.messageInput.addEventListener('input', () => {
-            this.messageInput.style.height = 'auto';
-            this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 200) + 'px';
-            this.updateSendButton();
-        });
+        // 菜单切换
+        if (this.menuToggle) {
+            this.menuToggle.addEventListener('click', () => this.toggleSidebar());
+        }
         
-        // 建议卡片
+        // 输入框事件
+        if (this.messageInput) {
+            this.messageInput.addEventListener('input', () => {
+                this.autoResize(this.messageInput);
+                this.updateSendButton();
+            });
+            
+            this.messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+
+        // 建议卡片点击
         document.querySelectorAll('.suggestion-card').forEach(card => {
             card.addEventListener('click', () => {
                 const prompt = card.dataset.prompt;
-                this.messageInput.value = prompt;
-                this.messageInput.focus();
-                this.updateSendButton();
+                if (this.messageInput) {
+                    this.messageInput.value = prompt;
+                    this.autoResize(this.messageInput);
+                    this.updateSendButton();
+                    this.messageInput.focus();
+                }
             });
         });
     }
 
-    updateSendButton() {
-        const hasText = this.messageInput.value.trim().length > 0;
-        const hasModel = this.selectedModel !== '';
-        this.sendBtn.disabled = !(hasText && hasModel);
-    }
-
-    async loadModels() {
-        console.log('🔄 开始加载模型列表...');
-        console.log('📡 API地址:', this.apiUrl + '/models');
+    // ========== 初始化检测器 ==========
+    initDetector() {
+        console.log('🔧 初始化检测器...');
         
-        try {
-            const response = await fetch(this.apiUrl + '/models');
-            console.log('📥 响应状态:', response.status);
-            
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-            
-            const data = await response.json();
-            console.log('📦 收到数据:', data);
-            
-            this.modelSelect.innerHTML = '<option value="">选择模型...</option>';
-            
-            if (!data.models || data.models.length === 0) {
-                throw new Error('没有可用的模型');
-            }
-            
-            data.models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.icon + ' ' + model.name;
-                this.modelSelect.appendChild(option);
+        // AI 对话按钮
+        if (this.chatNavBtn) {
+            this.chatNavBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🖱️ 点击了 AI 对话按钮');
+                this.switchToChat();
+            });
+            console.log('✅ AI 对话按钮已绑定');
+        } else {
+            console.error('❌ 找不到 chatNavBtn 元素');
+        }
+        
+        // 安全检测按钮
+        if (this.detectorNavBtn) {
+            this.detectorNavBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🖱️ 点击了安全检测按钮');
+                this.switchToDetector();
+            });
+            console.log('✅ 安全检测按钮已绑定');
+        } else {
+            console.error('❌ 找不到 detectorNavBtn 元素');
+        }
+        
+        // 字符计数
+        if (this.detectorInput) {
+            this.detectorInput.addEventListener('input', () => {
+                const count = this.detectorInput.value.length;
+                const charCountEl = document.getElementById('charCount');
+                if (charCountEl) {
+                    charCountEl.textContent = `${count} 字符`;
+                }
             });
             
-            console.log('✅ 模型列表加载成功，共', data.models.length, '个模型');
-            this.showNotification('加载了 ' + data.models.length + ' 个模型', 'success');
-            
-        } catch (error) {
-            console.error('❌ 加载模型失败:', error);
-            
-            this.modelSelect.innerHTML = '<option value="">连接失败，请检查后端</option>';
-            
-            let errorMsg = '无法连接到后端服务';
-            if (error.message.includes('Failed to fetch')) {
-                errorMsg = '后端服务未启动或端口错误';
-            } else if (error.message.includes('CORS')) {
-                errorMsg = 'CORS跨域问题';
-            } else {
-                errorMsg = error.message;
-            }
-            
-            this.showNotification(errorMsg, 'error');
-            
-            // 5秒后重试
-            setTimeout(() => {
-                console.log('🔄 5秒后重试...');
-                this.loadModels();
-            }, 5000);
+            // Ctrl+Enter 快捷键
+            this.detectorInput.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    this.runDetection();
+                }
+            });
         }
-    }
-
-    async loadSystemInfo() {
-        try {
-            const response = await fetch(this.apiUrl + '/health');
-            const data = await response.json();
-            
-            this.deviceStatus.textContent = data.cuda_available ? 'GPU' : 'CPU';
-            this.modelStatus.textContent = data.loaded_models.length > 0 ?
-                data.loaded_models.length + ' 个已加载' : '未加载';
-        } catch (error) {
-            console.error('加载系统信息失败:', error);
-        }
-    }
-
-    selectModel(modelId) {
-        this.selectedModel = modelId;
-        this.updateSendButton();
         
-        if (modelId) {
-            console.log('✅ 已选择模型:', modelId);
-            this.showNotification('模型已选择', 'success');
+        // 检测按钮
+        if (this.detectBtn) {
+            this.detectBtn.addEventListener('click', () => this.runDetection());
+        }
+        
+        // 清空按钮
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', () => {
+                if (this.detectorInput) {
+                    this.detectorInput.value = '';
+                }
+                const charCountEl = document.getElementById('charCount');
+                if (charCountEl) {
+                    charCountEl.textContent = '0 字符';
+                }
+                if (this.resultCard) {
+                    this.resultCard.style.display = 'none';
+                }
+            });
+        }
+        
+        console.log('✅ 检测器初始化完成');
+    }
+
+    // ========== 确保初始视图正确 ==========
+    ensureInitialView() {
+        console.log('🔄 设置初始视图...');
+        
+        // 移除所有 active 类
+        if (this.chatView) this.chatView.classList.remove('active');
+        if (this.detectorView) this.detectorView.classList.remove('active');
+        if (this.chatNavBtn) this.chatNavBtn.classList.remove('active');
+        if (this.detectorNavBtn) this.detectorNavBtn.classList.remove('active');
+        
+        // 只显示聊天视图
+        if (this.chatView) this.chatView.classList.add('active');
+        if (this.chatNavBtn) this.chatNavBtn.classList.add('active');
+        
+        console.log('✅ 初始视图设置完成 - 显示聊天界面');
+        console.log('视图状态:', {
+            chatViewActive: this.chatView?.classList.contains('active'),
+            detectorViewActive: this.detectorView?.classList.contains('active')
+        });
+    }
+
+    // ========== 切换到聊天 ==========
+    switchToChat() {
+        console.log('🔄 切换到聊天视图');
+        
+        // 移除所有 active
+        this.chatView.classList.remove('active');
+        this.detectorView.classList.remove('active');
+        this.chatNavBtn.classList.remove('active');
+        this.detectorNavBtn.classList.remove('active');
+        
+        // 激活聊天
+        this.chatView.classList.add('active');
+        this.chatNavBtn.classList.add('active');
+        
+        console.log('✅ 切换完成 - 聊天视图已激活');
+    }
+
+    // ========== 切换到检测器 ==========
+    switchToDetector() {
+        console.log('🔄 切换到检测器视图');
+        
+        // 移除所有 active
+        this.chatView.classList.remove('active');
+        this.detectorView.classList.remove('active');
+        this.chatNavBtn.classList.remove('active');
+        this.detectorNavBtn.classList.remove('active');
+        
+        // 激活检测器
+        this.detectorView.classList.add('active');
+        this.detectorNavBtn.classList.add('active');
+        
+        console.log('✅ 切换完成 - 检测器视图已激活');
+    }
+
+    // ========== 执行检测 ==========
+    async runDetection() {
+        const text = this.detectorInput.value.trim();
+        
+        if (!text) {
+            this.showToast('请输入要检测的文本', 'warning');
+            return;
+        }
+        
+        this.detectBtn.disabled = true;
+        this.detectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 检测中...';
+        
+        try {
+            const startTime = performance.now();
+            
+            const response = await fetch(this.apiUrl + '/detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            
+            const result = await response.json();
+            const detectTime = ((performance.now() - startTime) / 1000).toFixed(3);
+            
+            if (response.ok) {
+                this.displayDetectionResult(result, detectTime);
+            } else {
+                this.showToast(result.error || '检测失败', 'error');
+            }
+        } catch (error) {
+            console.error('检测失败:', error);
+            this.showToast('网络错误，请检查后端服务', 'error');
+        } finally {
+            this.detectBtn.disabled = false;
+            this.detectBtn.innerHTML = '<i class="fas fa-search"></i> 开始检测';
         }
     }
 
+    // ========== 显示检测结果 ==========
+    displayDetectionResult(result, detectTime) {
+        this.resultCard.style.display = 'block';
+        
+        // 检测时间
+        document.getElementById('timeBadge').textContent = `检测耗时: ${detectTime}s`;
+        
+        // 风险评分
+        const score = result.risk_score || 0;
+        document.getElementById('scoreNum').textContent = Math.round(score);
+        
+        // 更新圆环
+        const circle = document.getElementById('circleProgress');
+        const circumference = 377;
+        const offset = circumference - (score / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+        
+        // 风险等级
+        const badges = {
+            safe: '✅ 安全',
+            low: '⚡ 低风险',
+            medium: '⚠️ 中等风险',
+            high: '🚨 高风险',
+            critical: '🔴 严重风险'
+        };
+        document.getElementById('riskBadge').textContent = badges[result.risk_level] || badges.safe;
+        
+        // 风险判定
+        const verdict = result.is_jailbreak ? 
+            '🚫 检测到安全威胁，建议拦截' : 
+            '✅ 未检测到安全威胁';
+        document.getElementById('riskVerdict').textContent = verdict;
+        
+        // 统计数量
+        document.getElementById('threatCount').textContent = result.matched_features?.length || 0;
+        document.getElementById('keywordCount').textContent = result.suspicious_keywords?.length || 0;
+        
+        // 显示详细信息
+        this.showThreats(result.matched_features);
+        this.showKeywords(result.suspicious_keywords);
+        this.showSuggestions(result.recommendations);
+        
+        // 滚动到结果
+        this.resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ========== 显示威胁特征 ==========
+    showThreats(features) {
+        const card = document.getElementById('threatCard');
+        const content = document.getElementById('threatContent');
+        
+        if (!features || features.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+        
+        card.style.display = 'block';
+        content.innerHTML = features.map(f => `
+            <div class="analysis-tag">
+                <div class="tag-title">${this.escapeHtml(f.name || '未知特征')}</div>
+                <div class="tag-desc">${this.escapeHtml(f.description || '无描述')}</div>
+            </div>
+        `).join('');
+    }
+
+    // ========== 显示可疑关键词 ==========
+    showKeywords(keywords) {
+        const card = document.getElementById('keywordCard');
+        const content = document.getElementById('keywordContent');
+        
+        if (!keywords || keywords.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+        
+        card.style.display = 'block';
+        content.innerHTML = keywords.map(k => `
+            <div class="analysis-tag">
+                <div class="tag-title">"${this.escapeHtml(k.keyword || '')}"</div>
+                <div class="tag-desc">${this.escapeHtml(k.name || '')}</div>
+            </div>
+        `).join('');
+    }
+
+    // ========== 显示安全建议 ==========
+    showSuggestions(suggestions) {
+        const card = document.getElementById('suggestionCard');
+        const content = document.getElementById('suggestionContent');
+        
+        if (!suggestions || suggestions.length === 0) {
+            card.style.display = 'none';
+            return;
+        }
+        
+        card.style.display = 'block';
+        content.innerHTML = suggestions.map(s => `
+            <div class="analysis-tag">
+                <div class="tag-title">${this.escapeHtml(s)}</div>
+            </div>
+        `).join('');
+    }
+
+    // ========== 聊天功能 ==========
     async sendMessage() {
         const message = this.messageInput.value.trim();
         
-        if (!message || !this.selectedModel) return;
-
-        // 隐藏欢迎界面
-        this.welcomeScreen.style.display = 'none';
+        if (!message) {
+            this.showToast('请输入消息', 'warning');
+            return;
+        }
         
+        if (!this.selectedModel) {
+            this.showToast('请先选择模型', 'warning');
+            return;
+        }
+
+        // 隐藏欢迎屏幕
+        if (this.welcomeScreen) {
+            this.welcomeScreen.style.display = 'none';
+        }
+
         // 添加用户消息
         this.addMessage('user', message);
         this.messageInput.value = '';
-        this.messageInput.style.height = 'auto';
+        this.autoResize(this.messageInput);
         this.updateSendButton();
         
-        // 禁用输入
         this.sendBtn.disabled = true;
-        this.messageInput.disabled = true;
         
-        // 显示typing指示器
-        const typingId = this.showTyping();
+        // 显示加载动画
+        const loadingId = this.addMessage('assistant', '正在思考...', true);
 
         try {
             const response = await fetch(this.apiUrl + '/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: this.selectedModel,
                     message: message,
@@ -186,226 +400,126 @@ class ChatApp {
 
             const data = await response.json();
             
-            // 移除typing指示器
-            this.removeTyping(typingId);
+            // 移除加载消息
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
             
             if (response.ok) {
-                if (data.jailbreak_detected) {
-                    // 被拦截的消息
-                    this.addMessage('assistant', data.response, {
-                        jailbreak_detected: true,
-                        detection_result: data.detection_result
-                    });
-                } else {
-                    // 正常回复
-                    this.addMessage('assistant', data.response, {
-                        time: data.generation_time,
-                        tokens: data.tokens_generated
-                    });
-                    
-                    this.chatHistory.push(
-                        { role: 'user', content: message },
-                        { role: 'assistant', content: data.response }
-                    );
-                }
+                // 添加助手回复
+                this.addMessage('assistant', data.response);
+                
+                // 更新历史
+                this.chatHistory.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: data.response }
+                );
             } else {
-                this.showNotification(data.error || '请求失败', 'error');
+                this.showToast(data.error || '请求失败', 'error');
             }
         } catch (error) {
-            this.removeTyping(typingId);
-            console.error('❌ 发送消息失败:', error);
-            this.showNotification('网络错误，请检查后端服务', 'error');
+            console.error('发送消息失败:', error);
+            const loadingEl = document.getElementById(loadingId);
+            if (loadingEl) loadingEl.remove();
+            this.showToast('网络错误，请检查后端服务', 'error');
         } finally {
             this.sendBtn.disabled = false;
-            this.messageInput.disabled = false;
-            this.messageInput.focus();
-            this.updateSendButton();
         }
     }
 
-    addMessage(role, content, meta) {
-        meta = meta || {};
-        
+    addMessage(role, content, isLoading = false) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = 'message ' + role;
+        const messageId = 'msg-' + Date.now();
+        messageDiv.id = messageId;
+        messageDiv.className = `message ${role}-message`;
         
-        const isBlocked = meta.jailbreak_detected;
+        const avatar = role === 'user' ? 
+            '<i class="fas fa-user"></i>' : 
+            '<i class="fas fa-robot"></i>';
         
-        if (isBlocked) {
-            messageDiv.classList.add('blocked');
-        }
+        const loadingClass = isLoading ? 'loading' : '';
         
-        const avatar = role === 'user' ? '👤' : '🤖';
-        
-        let contentHtml = '<div class="message-text">' + this.escapeHtml(content) + '</div>';
-        
-        // 如果是被拦截的消息，添加检测详情
-        if (isBlocked && meta.detection_result) {
-            const result = meta.detection_result;
-            
-            contentHtml += '<div class="detection-details">';
-            contentHtml += '<h4>🔍 安全检测报告</h4>';
-            
-            // 风险评分 - 添加安全检查
-            let riskLevel = 'medium';  // 默认值
-            if (result.risk_level) {
-                riskLevel = result.risk_level.toLowerCase();
-            }
-            
-            // 风险等级显示名称
-            const riskLevelNames = {
-                'safe': '安全',
-                'low': '低风险',
-                'medium': '中等风险',
-                'high': '高风险',
-                'critical': '严重风险'
-            };
-            
-            const riskScore = result.risk_score || 0;
-            const riskName = riskLevelNames[riskLevel] || '未知';
-            
-            contentHtml += `<div class="risk-score ${riskLevel}">`;
-            contentHtml += `风险评分: ${riskScore}/100 `;
-            contentHtml += `<span class="risk-badge risk-${riskLevel}">${riskName}</span>`;
-            contentHtml += '</div>';
-            
-            // 检测到的特征
-            if (result.matched_features && result.matched_features.length > 0) {
-                contentHtml += '<h5>⚠️ 检测到的问题：</h5>';
-                contentHtml += '<ul class="feature-list">';
-                result.matched_features.slice(0, 5).forEach(feature => {
-                    contentHtml += '<li>';
-                    contentHtml += `<div class="feature-name">${this.escapeHtml(feature.name || '未知特征')}</div>`;
-                    contentHtml += `<div class="feature-desc">${this.escapeHtml(feature.description || '无描述')}</div>`;
-                    contentHtml += '</li>';
-                });
-                contentHtml += '</ul>';
-            }
-            
-            // 可疑关键词
-            if (result.suspicious_keywords && result.suspicious_keywords.length > 0) {
-                contentHtml += '<h5>🔍 可疑关键词：</h5>';
-                contentHtml += '<ul>';
-                result.suspicious_keywords.forEach(kw => {
-                    const keyword = kw.keyword || '';
-                    const name = kw.name || '未知';
-                    contentHtml += `<li><code>${this.escapeHtml(keyword)}</code> - ${this.escapeHtml(name)}</li>`;
-                });
-                contentHtml += '</ul>';
-            }
-            
-            // 建议
-            if (result.recommendations && result.recommendations.length > 0) {
-                contentHtml += '<div class="recommendations">';
-                contentHtml += '<h5>💡 建议：</h5>';
-                contentHtml += '<ul>';
-                result.recommendations.forEach(rec => {
-                    contentHtml += `<li>${this.escapeHtml(rec)}</li>`;
-                });
-                contentHtml += '</ul>';
-                contentHtml += '</div>';
-            }
-            
-            contentHtml += '</div>';
-        }
-        
-        // 普通元信息
-        let metaHtml = '';
-        if (meta.time && !isBlocked) {
-            metaHtml = '<div class="message-meta">';
-            metaHtml += '<span>⏱️ ' + meta.time + '秒</span>';
-            if (meta.tokens) {
-                metaHtml += '<span>⚡ ' + meta.tokens + ' tokens</span>';
-            }
-            metaHtml += '</div>';
-        }
-        
-        messageDiv.innerHTML = 
-            '<div class="message-avatar">' + avatar + '</div>' +
-            '<div class="message-content">' +
-                contentHtml +
-                metaHtml +
-            '</div>';
+        messageDiv.innerHTML = `
+            <div class="message-avatar">${avatar}</div>
+            <div class="message-content ${loadingClass}">
+                <div class="message-text">${this.escapeHtml(content)}</div>
+            </div>
+        `;
         
         this.messages.appendChild(messageDiv);
         this.scrollToBottom();
-    }
         
-
-
-    showTyping() {
-        const typingDiv = document.createElement('div');
-        const typingId = 'typing-' + Date.now();
-        typingDiv.id = typingId;
-        typingDiv.className = 'message assistant';
-        typingDiv.innerHTML = 
-            '<div class="message-avatar">' +
-                '<i class="fas fa-robot"></i>' +
-            '</div>' +
-            '<div class="message-content">' +
-                '<div class="typing-indicator">' +
-                    '<div class="typing-dot"></div>' +
-                    '<div class="typing-dot"></div>' +
-                    '<div class="typing-dot"></div>' +
-                '</div>' +
-            '</div>';
-        
-        this.messages.appendChild(typingDiv);
-        this.scrollToBottom();
-        return typingId;
+        return messageId;
     }
 
-    removeTyping(typingId) {
-        const typingDiv = document.getElementById(typingId);
-        if (typingDiv) {
-            typingDiv.remove();
+    // ========== 工具函数 ==========
+    
+    async loadModels() {
+        try {
+            const response = await fetch(this.apiUrl + '/models');
+            const data = await response.json();
+            
+            this.modelSelect.innerHTML = '<option value="">请选择模型...</option>';
+            
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                this.modelSelect.appendChild(option);
+            });
+            
+            console.log('✅ 加载了', data.models.length, '个模型');
+        } catch (error) {
+            console.error('加载模型失败:', error);
+            this.showToast('无法连接到后端服务', 'error');
         }
     }
 
-    createNewChat() {
-        this.chatHistory = [];
-        this.messages.innerHTML = '';
-        this.welcomeScreen.style.display = 'flex';
-        console.log('✨ 创建新对话');
+    async checkDevice() {
+        try {
+            const response = await fetch(this.apiUrl + '/device');
+            const data = await response.json();
+            
+            const deviceStatusEl = document.getElementById('deviceStatus');
+            if (deviceStatusEl) {
+                deviceStatusEl.textContent = data.device;
+            }
+            console.log('✅ 设备:', data.device);
+        } catch (error) {
+            console.error('检测设备失败:', error);
+        }
+    }
+
+    selectModel(modelId) {
+        this.selectedModel = modelId;
+        this.updateSendButton();
+        
+        if (modelId) {
+            const option = this.modelSelect.options[this.modelSelect.selectedIndex];
+            const modelStatusEl = document.getElementById('modelStatus');
+            if (modelStatusEl) {
+                modelStatusEl.textContent = option.text;
+            }
+            this.showToast('已选择模型：' + option.text, 'success');
+        }
     }
 
     toggleSidebar() {
         this.sidebar.classList.toggle('open');
     }
 
-    scrollToBottom() {
-        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
     }
 
-    showNotification(message, type) {
-        type = type || 'info';
-        
-        const colors = {
-            success: '#19c37d',
-            error: '#ef4444',
-            warning: '#f59e0b',
-            info: '#3b82f6'
-        };
-        
-        const notification = document.createElement('div');
-        notification.style.cssText = 
-            'position: fixed;' +
-            'top: 20px;' +
-            'right: 20px;' +
-            'background: ' + colors[type] + ';' +
-            'color: white;' +
-            'padding: 16px 24px;' +
-            'border-radius: 8px;' +
-            'box-shadow: 0 4px 12px rgba(0,0,0,0.3);' +
-            'z-index: 2000;' +
-            'font-size: 14px;';
-        
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(function() {
-            notification.remove();
-        }, 3000);
+    updateSendButton() {
+        const hasText = this.messageInput.value.trim().length > 0;
+        const hasModel = this.selectedModel !== '';
+        this.sendBtn.disabled = !(hasText && hasModel);
+    }
+
+    scrollToBottom() {
+        this.messages.scrollTop = this.messages.scrollHeight;
     }
 
     escapeHtml(text) {
@@ -413,11 +527,35 @@ class ChatApp {
         div.textContent = text;
         return div.innerHTML.replace(/\n/g, '<br>');
     }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const icons = {
+            success: '<i class="fas fa-check-circle"></i>',
+            error: '<i class="fas fa-times-circle"></i>',
+            warning: '<i class="fas fa-exclamation-triangle"></i>',
+            info: '<i class="fas fa-info-circle"></i>'
+        };
+        
+        toast.innerHTML = `
+            ${icons[type]}
+            <span>${message}</span>
+        `;
+        
+        const container = document.getElementById('toastContainer');
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 }
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 应用初始化...');
-    new ChatApp();
-    console.log('✅ 应用初始化完成');
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 页面加载完成，初始化应用...');
+    new App();
 });
